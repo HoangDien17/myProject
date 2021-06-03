@@ -1,5 +1,6 @@
-import UserModel from '../models/userModel'
-import bcrypt from 'bcrypt'
+const UserModel = require ('../models/userModel');
+const bcrypt = require ('bcrypt');
+const jwt = require('jsonwebtoken');
 
 let saltRounds = 10;
 
@@ -8,7 +9,7 @@ let register = (username, pass) => {
     // check user exists
     let user = await UserModel.checkUserExists(username);
     if (user) {
-      res.status(500).send("Tên đăng kí đã tồn tại.");
+      reject("Tên đăng kí đã tồn tại.");
     }
     //hash password
     let salt = bcrypt.genSaltSync(saltRounds);
@@ -23,4 +24,20 @@ let register = (username, pass) => {
   })
 }
 
-module.exports = { register };
+let login = (username, pass) => {
+  return new Promise(async (resolve, reject) => {
+    let user = await UserModel.checkUserExists(username);
+    console.log(user)
+    if(!user) {
+      reject("Username nhập chưa chính xác!");
+    }
+    let checkPass = await user.comparePassword(pass);
+    if(!checkPass) {
+      reject("Mật khẩu đăng nhập chưa chính xác!");
+    }
+    let accessToken = jwt.sign({user: username}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '30m'});
+    resolve(accessToken)
+  })
+}
+
+module.exports = { register, login };
